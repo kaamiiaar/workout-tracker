@@ -1,0 +1,7 @@
+*.mp4
+__pycache__/
+*.pyc
+.DS_Store
+*.bak
+workout-db.json
+last done - 18
