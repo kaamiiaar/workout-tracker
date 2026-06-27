@@ -346,6 +346,28 @@
         object-fit: cover;
       }
 
+      .video-frame {
+        width: 100%;
+        height: 100%;
+        display: none;
+        border: 0;
+        background: #000;
+      }
+
+      .video-stage iframe.video-frame {
+        position: absolute;
+        inset: 0;
+      }
+
+      .video-stage.drive-mode .video-player,
+      .video-stage.drive-mode .seek-controls {
+        display: none;
+      }
+
+      .video-stage.drive-mode .video-frame {
+        display: block;
+      }
+
       .video-overlay-controls {
         position: absolute;
         inset: 0;
@@ -1265,6 +1287,13 @@
               muted
               playsinline
             ></video>
+            <iframe
+              id="videoFrame"
+              class="video-frame"
+              allow="autoplay; fullscreen"
+              allowfullscreen
+              title="Workout video"
+            ></iframe>
             <div class="video-empty-state" id="videoEmptyState">
               <div class="video-empty-inner">
                 <div class="video-empty-icon">
@@ -1309,7 +1338,7 @@
               </div>
             </div>
           </div>
-          <div class="video-hint">
+          <div class="video-hint" id="videoHint">
             Use the arrows or keyboard left/right keys to skip 10 seconds.
           </div>
           <div class="video-controls">
@@ -1610,20 +1639,39 @@
       function loadVideo(num) {
         currentWorkout = num;
         const workout = WORKOUTS[num - 1];
+        const stage = document.getElementById("videoStage");
         const video = document.getElementById("videoPlayer");
+        const frame = document.getElementById("videoFrame");
         const emptyState = document.getElementById("videoEmptyState");
+        const hint = document.getElementById("videoHint");
         const src = getVideoSource(workout);
 
         if (src) {
-          video.src = src;
-          video.load();
-          video.style.visibility = "visible";
+          if (src.type === "iframe") {
+            video.removeAttribute("src");
+            video.load();
+            frame.src = src.url;
+            stage.classList.add("drive-mode");
+            video.style.visibility = "hidden";
+            hint.textContent = "Use the Google Drive player controls for playback and seeking.";
+          } else {
+            frame.removeAttribute("src");
+            video.src = src.url;
+            video.load();
+            stage.classList.remove("drive-mode");
+            video.style.visibility = "visible";
+            hint.textContent =
+              "Use the arrows or keyboard left/right keys to skip 10 seconds.";
+          }
           emptyState.classList.remove("active");
         } else {
           video.removeAttribute("src");
           video.load();
+          frame.removeAttribute("src");
+          stage.classList.remove("drive-mode");
           video.style.visibility = "hidden";
           emptyState.classList.add("active");
+          hint.textContent = "Add a public video link in video-config.js.";
         }
 
         // Update hero card
@@ -1638,11 +1686,31 @@
 
       function getVideoSource(workout) {
         const configuredUrl = VIDEO_URLS[String(workout.num)] || VIDEO_URLS[workout.num];
-        if (configuredUrl && !configuredUrl.includes("PASTE_PUBLIC_VIDEO_URL")) {
-          return configuredUrl;
+        if (!configuredUrl) {
+          return isLocalApp ? { type: "video", url: encodeURI(workout.filename) } : null;
         }
 
-        return isLocalApp ? encodeURI(workout.filename) : "";
+        if (typeof configuredUrl === "string") {
+          if (!configuredUrl.includes("PASTE_PUBLIC_VIDEO_URL")) {
+            return { type: "video", url: configuredUrl };
+          }
+          return isLocalApp ? { type: "video", url: encodeURI(workout.filename) } : null;
+        }
+
+        if (typeof configuredUrl === "object") {
+          if (configuredUrl.driveId) {
+            return {
+              type: "iframe",
+              url: `https://drive.google.com/file/d/${configuredUrl.driveId}/preview`,
+            };
+          }
+
+          if (configuredUrl.url) {
+            return { type: configuredUrl.type || "video", url: configuredUrl.url };
+          }
+        }
+
+        return isLocalApp ? { type: "video", url: encodeURI(workout.filename) } : null;
       }
 
       function seekVideo(deltaSeconds) {

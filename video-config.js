@@ -1,13 +1,13 @@
 // Public video URLs for the static GitHub Pages version.
 //
-// Replace each value with the public URL for that workout video. These URLs are
-// visible to anyone who can view the website, so only use links you are happy to
-// make public.
+// Replace each value with a public Google Drive file ID or public video URL.
+// These IDs/URLs are visible to anyone who can view the website, so only use
+// links you are happy to make public.
 //
 // The local Mac app will still fall back to the MP4 files in this folder when a
 // URL is blank.
 window.WORKOUT_VIDEO_URLS = {
-  1: "",
+  1: { driveId: "1YWtvPWHCyMepdlVPtCerPyNYtxEdF3oL" },
   2: "",
   3: "",
   4: "",

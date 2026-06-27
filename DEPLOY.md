@@ -15,16 +15,28 @@ large for a normal GitHub Pages repo.
 
 ## Video Hosting
 
-Upload the videos to a public video/file host, then paste the public video URLs
-into `video-config.js`.
+Upload the videos to a public video/file host, then paste the public video IDs
+or URLs into `video-config.js`.
 
 Example:
 
 ```js
 window.WORKOUT_VIDEO_URLS = {
-  1: "https://example.com/path/to/workout-1.mp4",
+  1: { driveId: "GOOGLE_DRIVE_FILE_ID" },
   2: "https://example.com/path/to/workout-2.mp4",
 };
+```
+
+For a Google Drive link like:
+
+```text
+https://drive.google.com/file/d/FILE_ID/view
+```
+
+use only the `FILE_ID` value:
+
+```js
+1: { driveId: "FILE_ID" }
 ```
 
 The video links are public. A browser cannot play a private video URL without
