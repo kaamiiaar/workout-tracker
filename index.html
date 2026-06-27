@@ -312,7 +312,9 @@
       .video-stage {
         position: relative;
         background: #000;
-        min-height: clamp(420px, 68vh, 860px);
+        aspect-ratio: 16 / 9;
+        min-height: 0;
+        overflow: hidden;
       }
 
       .video-empty-state {
@@ -379,6 +381,7 @@
       }
 
       .video-stage.drive-mode .video-player,
+      .video-stage.drive-mode .video-overlay-controls,
       .video-stage.drive-mode .seek-controls {
         display: none;
       }
@@ -449,6 +452,7 @@
       .video-stage:fullscreen {
         width: 100vw;
         height: 100vh;
+        aspect-ratio: auto;
         border-radius: 0;
       }
 
@@ -456,14 +460,25 @@
         object-fit: contain;
       }
 
+      .video-stage:fullscreen .video-frame {
+        width: 100vw;
+        height: 100vh;
+      }
+
       .video-stage:-webkit-full-screen {
         width: 100vw;
         height: 100vh;
+        aspect-ratio: auto;
         border-radius: 0;
       }
 
       .video-stage:-webkit-full-screen .video-player {
         object-fit: contain;
+      }
+
+      .video-stage:-webkit-full-screen .video-frame {
+        width: 100vw;
+        height: 100vh;
       }
 
       /* Fallback fullscreen for pywebview / environments without Fullscreen API */
@@ -473,6 +488,7 @@
         left: 0;
         width: 100vw;
         height: 100vh;
+        aspect-ratio: auto;
         z-index: 99999;
         border-radius: 0;
         min-height: unset;
@@ -482,10 +498,19 @@
         object-fit: contain;
       }
 
+      .video-stage.fake-fullscreen .video-frame {
+        width: 100vw;
+        height: 100vh;
+      }
+
       /* fullscreen should own the whole screen: drop the nav dock and grain */
       body:has(.video-stage.fake-fullscreen) .bottom-nav,
       body:has(.video-stage:fullscreen) .bottom-nav {
         display: none;
+      }
+
+      body:has(.video-stage.fake-fullscreen) {
+        overflow: hidden;
       }
 
       body:has(.video-stage.fake-fullscreen)::after {
@@ -1370,10 +1395,6 @@
 
         .stats-grid {
           grid-template-columns: repeat(2, 1fr);
-        }
-
-        .video-stage {
-          min-height: min(58vh, 420px);
         }
 
         .video-overlay-controls {
