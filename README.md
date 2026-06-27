@@ -7,9 +7,11 @@ Daily workout video tracker with progress insights.
 This app can run as a static GitHub Pages site from `index.html`.
 
 - Progress saves in each browser with `localStorage`.
+- Optional Google Sheet sync can share progress across devices.
 - Videos are not stored in this repo.
 - Add public video links in `video-config.js`.
 - See `DEPLOY.md` for the GitHub Pages flow.
+- See `SYNC.md` for the Google Apps Script sync setup.
 
 ## Quick Start
 
@@ -35,6 +37,7 @@ Then open: http://localhost:8081
 - **Mark as Done**: Track completions with dates
 - **All Workouts**: Browse all 24 workouts filtered by body part
 - **Insights**: View streaks, weekly activity, and body part distribution
+- **Sync**: Optional Google Sheet-backed progress sync across devices
 
 ## Files
 

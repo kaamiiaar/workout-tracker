@@ -133,6 +133,12 @@
         padding-top: 22px;
       }
 
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
       .logo {
         font-family: var(--font-display);
         font-size: 28px;
@@ -177,6 +183,19 @@
         color: var(--text-primary);
         border-color: var(--border-strong);
         transform: rotate(15deg);
+      }
+
+      .sync-toggle.synced {
+        color: var(--success);
+        border-color: color-mix(in srgb, var(--success) 48%, transparent);
+      }
+
+      .sync-toggle.syncing {
+        color: var(--accent);
+      }
+
+      .sync-toggle.syncing i {
+        animation: syncSpin 0.9s linear infinite;
       }
 
       .greeting {
@@ -1111,6 +1130,12 @@
         }
       }
 
+      @keyframes syncSpin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       .empty-state {
         text-align: center;
         padding: 60px 20px;
@@ -1166,6 +1191,136 @@
 
       .toast i {
         color: var(--accent);
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        background: rgba(0, 0, 0, 0.54);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      .modal-backdrop.active {
+        display: flex;
+      }
+
+      .sync-modal {
+        width: min(100%, 460px);
+        background: var(--card-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 24px 70px -24px rgba(0, 0, 0, 0.55);
+        padding: 22px;
+      }
+
+      .sync-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .sync-modal-title {
+        font-family: var(--font-display);
+        font-size: 32px;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .icon-button {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition);
+      }
+
+      .icon-button:hover {
+        color: var(--text-primary);
+        border-color: var(--border-strong);
+      }
+
+      .form-field {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .form-field label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .form-field input {
+        width: 100%;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border-radius: 10px;
+        padding: 13px 14px;
+        font: inherit;
+      }
+
+      .form-field input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--glow);
+      }
+
+      .sync-status {
+        min-height: 20px;
+        color: var(--text-tertiary);
+        font-size: 13px;
+        margin: 6px 0 16px;
+      }
+
+      .sync-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .sync-actions .btn {
+        padding: 13px 14px;
+        font-size: 18px;
+      }
+
+      .btn-secondary {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+      }
+
+      .btn-secondary:hover {
+        border-color: var(--border-strong);
+        transform: translateY(-2px);
+      }
+
+      .btn-danger {
+        grid-column: 1 / -1;
+        background: transparent;
+        color: var(--text-tertiary);
+        border: 1px solid var(--border);
+      }
+
+      .btn-danger:hover {
+        color: var(--accent);
+        border-color: var(--accent);
       }
 
       @media (max-width: 640px) {
@@ -1258,9 +1413,20 @@
     <div class="container">
       <header>
         <div class="logo"><i class="fas fa-dumbbell"></i> Workout Tracker</div>
-        <button class="theme-toggle" id="themeToggle">
-          <i class="fas fa-moon"></i>
-        </button>
+        <div class="header-actions">
+          <button
+            class="theme-toggle sync-toggle"
+            id="syncToggle"
+            type="button"
+            aria-label="Sync settings"
+            title="Sync settings"
+          >
+            <i class="fas fa-cloud"></i>
+          </button>
+          <button class="theme-toggle" id="themeToggle" type="button">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
       </header>
 
       <!-- Today View -->
@@ -1449,6 +1615,37 @@
     <!-- Toast notifications -->
     <div class="toast" id="toast"></div>
 
+    <div class="modal-backdrop" id="syncModal" aria-hidden="true">
+      <div class="sync-modal" role="dialog" aria-modal="true" aria-labelledby="syncModalTitle">
+        <div class="sync-modal-header">
+          <div class="sync-modal-title" id="syncModalTitle">Sync</div>
+          <button class="icon-button" id="syncCloseBtn" type="button" aria-label="Close sync settings">
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+        <div class="form-field">
+          <label for="syncEndpointInput">Apps Script URL</label>
+          <input id="syncEndpointInput" type="url" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="form-field">
+          <label for="syncKeyInput">Sync Key</label>
+          <input id="syncKeyInput" type="password" autocomplete="off" />
+        </div>
+        <div class="sync-status" id="syncStatus"></div>
+        <div class="sync-actions">
+          <button class="btn btn-primary" id="syncSaveBtn" type="button">
+            <i class="fas fa-floppy-disk"></i> Save
+          </button>
+          <button class="btn btn-secondary" id="syncNowBtn" type="button">
+            <i class="fas fa-rotate"></i> Sync
+          </button>
+          <button class="btn btn-danger" id="syncDisconnectBtn" type="button">
+            <i class="fas fa-link-slash"></i> Disconnect
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="video-config.js"></script>
     <script>
       // Data structure
@@ -1495,10 +1692,15 @@
       let currentWorkout = 1;
       let currentFilter = "all";
       const SEEK_SECONDS = 10;
+      const DATA_STORAGE_KEY = "workoutTracker";
+      const SYNC_STORAGE_KEY = "workoutTrackerSync";
+      let syncConfig = loadSyncConfig();
+      let syncInProgress = false;
 
       // Initialize
       async function init() {
         await loadData();
+        updateSyncButton();
         setupTheme();
         renderTodayView();
         renderWorkoutsView();
@@ -1508,15 +1710,16 @@
 
       // Data persistence
       async function loadData() {
+        let loadedFromServer = false;
         if (API_BASE) {
           try {
             const response = await fetch(`${API_BASE}/api/load`);
             if (response.ok) {
               const data = await response.json();
               if (isValidAppData(data)) {
-                appData = data;
-                localStorage.setItem("workoutTracker", JSON.stringify(appData));
-                return;
+                appData = normalizeAppData(data);
+                persistLocalData();
+                loadedFromServer = true;
               }
             }
           } catch (error) {
@@ -1524,21 +1727,39 @@
           }
         }
 
-        const stored = localStorage.getItem("workoutTracker");
-        if (stored) {
+        const stored = localStorage.getItem(DATA_STORAGE_KEY);
+        if (!loadedFromServer && stored) {
           try {
             const parsed = JSON.parse(stored);
             if (isValidAppData(parsed)) {
-              appData = parsed;
+              appData = normalizeAppData(parsed);
             }
           } catch (error) {
             console.error("Failed to parse localStorage data:", error);
           }
         }
+
+        if (hasSyncConfig()) {
+          try {
+            setSyncState("syncing");
+            const remoteData = await loadRemoteData();
+            const merged = mergeAppData(appData, remoteData);
+            const changed = JSON.stringify(merged) !== JSON.stringify(appData);
+            appData = merged;
+            persistLocalData();
+            if (changed) await saveData({ remote: true });
+            setSyncState("synced");
+          } catch (error) {
+            console.warn("Remote sync load failed:", error);
+            setSyncState("idle");
+          }
+        }
       }
 
-      async function saveData() {
-        localStorage.setItem("workoutTracker", JSON.stringify(appData));
+      async function saveData(options = {}) {
+        const { remote = true } = options;
+        appData.settings.updatedAt = Date.now();
+        persistLocalData();
 
         if (API_BASE) {
           try {
@@ -1551,6 +1772,14 @@
             console.warn("Failed to save to server:", error);
           }
         }
+
+        if (remote && hasSyncConfig()) {
+          queueRemoteSave();
+        }
+      }
+
+      function persistLocalData() {
+        localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(appData));
       }
 
       function isValidAppData(value) {
@@ -1560,6 +1789,224 @@
             value.settings &&
             typeof value.settings.darkMode === "boolean"
         );
+      }
+
+      function normalizeAppData(value) {
+        return {
+          completions: Array.isArray(value.completions) ? value.completions : [],
+          settings: {
+            darkMode: Boolean(value.settings?.darkMode),
+            lastCompleted: Number(value.settings?.lastCompleted || 0),
+            updatedAt: Number(value.settings?.updatedAt || 0),
+          },
+        };
+      }
+
+      function mergeAppData(localData, remoteData) {
+        const local = normalizeAppData(localData);
+        const remote = normalizeAppData(remoteData);
+        const completionsByKey = new Map();
+
+        [...local.completions, ...remote.completions].forEach((completion) => {
+          if (!completion || !completion.date || !completion.workoutNum) return;
+          const key =
+            completion.id ||
+            `${completion.date}:${completion.workoutNum}:${completion.bodyPart || ""}`;
+          completionsByKey.set(key, completion);
+        });
+
+        const settings =
+          remote.settings.updatedAt > local.settings.updatedAt
+            ? remote.settings
+            : local.settings;
+
+        return {
+          completions: [...completionsByKey.values()].sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+          ),
+          settings,
+        };
+      }
+
+      function loadSyncConfig() {
+        try {
+          const stored = localStorage.getItem(SYNC_STORAGE_KEY);
+          if (!stored) return { endpoint: "", key: "" };
+          const parsed = JSON.parse(stored);
+          return {
+            endpoint: parsed.endpoint || "",
+            key: parsed.key || "",
+          };
+        } catch {
+          return { endpoint: "", key: "" };
+        }
+      }
+
+      function saveSyncConfig(nextConfig) {
+        syncConfig = {
+          endpoint: String(nextConfig.endpoint || "").trim(),
+          key: String(nextConfig.key || "").trim(),
+        };
+        localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(syncConfig));
+        updateSyncButton();
+      }
+
+      function clearSyncConfig() {
+        syncConfig = { endpoint: "", key: "" };
+        localStorage.removeItem(SYNC_STORAGE_KEY);
+        updateSyncButton();
+      }
+
+      function hasSyncConfig() {
+        return Boolean(syncConfig.endpoint && syncConfig.key);
+      }
+
+      function setSyncState(state) {
+        const button = document.getElementById("syncToggle");
+        if (!button) return;
+        button.classList.toggle("syncing", state === "syncing");
+        button.classList.toggle("synced", state === "synced" || hasSyncConfig());
+      }
+
+      function updateSyncButton() {
+        setSyncState(syncInProgress ? "syncing" : hasSyncConfig() ? "synced" : "idle");
+      }
+
+      function setSyncStatus(message) {
+        const status = document.getElementById("syncStatus");
+        if (status) status.textContent = message || "";
+      }
+
+      function openSyncModal() {
+        document.getElementById("syncEndpointInput").value = syncConfig.endpoint;
+        document.getElementById("syncKeyInput").value = syncConfig.key;
+        setSyncStatus(
+          hasSyncConfig()
+            ? "Sync is configured on this device."
+            : "Add your Apps Script URL and sync key."
+        );
+        const modal = document.getElementById("syncModal");
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeSyncModal() {
+        const modal = document.getElementById("syncModal");
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+      }
+
+      async function loadRemoteData() {
+        const payload = await jsonpRequest(syncConfig.endpoint, {
+          action: "load",
+          key: syncConfig.key,
+        });
+        if (!payload?.ok || !isValidAppData(payload.data)) {
+          throw new Error(payload?.error || "Invalid remote data");
+        }
+        return payload.data;
+      }
+
+      async function saveRemoteData() {
+        await fetch(syncConfig.endpoint, {
+          method: "POST",
+          mode: "no-cors",
+          body: JSON.stringify({
+            action: "save",
+            key: syncConfig.key,
+            data: appData,
+          }),
+        });
+      }
+
+      function jsonpRequest(endpoint, params) {
+        return new Promise((resolve, reject) => {
+          const callbackName = `workoutSync_${Date.now()}_${Math.random()
+            .toString(36)
+            .slice(2)}`;
+          const url = new URL(endpoint);
+          Object.entries(params).forEach(([key, value]) => {
+            url.searchParams.set(key, value);
+          });
+          url.searchParams.set("callback", callbackName);
+
+          const script = document.createElement("script");
+          const timer = setTimeout(() => {
+            cleanup();
+            reject(new Error("Sync timed out"));
+          }, 12000);
+
+          function cleanup() {
+            clearTimeout(timer);
+            script.remove();
+            delete window[callbackName];
+          }
+
+          window[callbackName] = (payload) => {
+            cleanup();
+            resolve(payload);
+          };
+
+          script.onerror = () => {
+            cleanup();
+            reject(new Error("Sync request failed"));
+          };
+
+          script.src = url.toString();
+          document.body.appendChild(script);
+        });
+      }
+
+      let remoteSaveTimer = null;
+      function queueRemoteSave() {
+        clearTimeout(remoteSaveTimer);
+        remoteSaveTimer = setTimeout(() => {
+          syncRemoteSave();
+        }, 600);
+      }
+
+      async function syncRemoteSave() {
+        if (!hasSyncConfig() || syncInProgress) return;
+        syncInProgress = true;
+        setSyncState("syncing");
+        try {
+          await saveRemoteData();
+          setSyncState("synced");
+        } catch (error) {
+          console.warn("Remote sync save failed:", error);
+          setSyncState("idle");
+        } finally {
+          syncInProgress = false;
+          updateSyncButton();
+        }
+      }
+
+      async function runManualSync() {
+        if (!hasSyncConfig()) {
+          setSyncStatus("Add a script URL and sync key first.");
+          return;
+        }
+
+        syncInProgress = true;
+        setSyncState("syncing");
+        setSyncStatus("Syncing...");
+        try {
+          const remoteData = await loadRemoteData();
+          appData = mergeAppData(appData, remoteData);
+          persistLocalData();
+          await saveRemoteData();
+          renderTodayView();
+          renderWorkoutsView();
+          renderInsights();
+          setSyncStatus("Synced.");
+          showToast("Progress synced", "fa-cloud-check");
+        } catch (error) {
+          console.warn("Manual sync failed:", error);
+          setSyncStatus("Sync failed. Check the URL, key, and deployment access.");
+        } finally {
+          syncInProgress = false;
+          updateSyncButton();
+        }
       }
 
       // Toast notifications (in-app replacement for alert)
@@ -2142,6 +2589,47 @@
           .getElementById("themeToggle")
           .addEventListener("click", toggleTheme);
 
+        document
+          .getElementById("syncToggle")
+          .addEventListener("click", openSyncModal);
+
+        document
+          .getElementById("syncCloseBtn")
+          .addEventListener("click", closeSyncModal);
+
+        document.getElementById("syncModal").addEventListener("click", (e) => {
+          if (e.target.id === "syncModal") closeSyncModal();
+        });
+
+        document.getElementById("syncSaveBtn").addEventListener("click", () => {
+          saveSyncConfig({
+            endpoint: document.getElementById("syncEndpointInput").value,
+            key: document.getElementById("syncKeyInput").value,
+          });
+          setSyncStatus("Saved on this device.");
+          showToast("Sync settings saved", "fa-cloud");
+        });
+
+        document
+          .getElementById("syncNowBtn")
+          .addEventListener("click", async () => {
+            saveSyncConfig({
+              endpoint: document.getElementById("syncEndpointInput").value,
+              key: document.getElementById("syncKeyInput").value,
+            });
+            await runManualSync();
+          });
+
+        document
+          .getElementById("syncDisconnectBtn")
+          .addEventListener("click", () => {
+            clearSyncConfig();
+            document.getElementById("syncEndpointInput").value = "";
+            document.getElementById("syncKeyInput").value = "";
+            setSyncStatus("Disconnected on this device.");
+            showToast("Sync disconnected", "fa-link-slash");
+          });
+
         // Navigation
         document.querySelectorAll(".nav-item").forEach((item) => {
           item.addEventListener("click", () => {
@@ -2193,6 +2681,11 @@
           if (!todayViewActive && !isVideoFullscreen()) return;
 
           if (e.key === "Escape") {
+            if (document.getElementById("syncModal").classList.contains("active")) {
+              closeSyncModal();
+              return;
+            }
+
             const stage = document.getElementById("videoStage");
             if (stage && stage.classList.contains("fake-fullscreen")) {
               e.preventDefault();
